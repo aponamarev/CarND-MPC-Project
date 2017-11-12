@@ -7,14 +7,22 @@
 using namespace std;
 
 class MPC {
- public:
-  MPC();
-
-  virtual ~MPC();
-
-  // Solve the model given an initial state and polynomial coefficients.
-  // Return the first actuatotions.
-  vector<double> Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs);
+public:
+    
+    struct solution {
+        double d;
+        double a;
+        vector<double> x;
+        vector<double> y;
+    };
+    
+    MPC();
+    
+    virtual ~MPC();
+    
+    // Solve the model given an initial state and polynomial coefficients.
+    // Return the first actuatotions.
+    solution Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs);
 };
 
 #endif /* MPC_H */
