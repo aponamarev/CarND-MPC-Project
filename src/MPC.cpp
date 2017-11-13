@@ -8,14 +8,14 @@ using CppAD::AD;
 
 // Set the timestep length and duration to 1 second
 size_t N = 10;
-double dt = 0.1;
+double dt = 0.03;
+double delay_t = 0.100;
 
-const double w_cte  = 100; // Enforce proximity to the trajectory
-const double w_epsi = 500; // Enforce proximity of the car rotation to the rotation implied by the trajectory
-const double w_d    = 100; // Enforce smooth steering
-const double w_v    = 100; // Enforce speed changes
-const double w_a    = 100; // Enforce smooth acceleration changes
-const double w_tv   = 10; // Encourage speed
+const double w_cte  = 50; // Enforce proximity to the trajectory
+const double w_epsi = 5000; // Enforce proximity of the car rotation to the rotation implied by the trajectory
+const double w_psi  = 1000;
+const double w_d    = 5000; // Enforce smooth steering
+const double w_tv   = 0.1; // Encourage speed
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -30,9 +30,9 @@ const double w_tv   = 10; // Encourage speed
 const double Lf = 2.67; // Udacity SDCND Lesson 18.3 Link - https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/af4fcd4f-eb1f-43d8-82b3-17bb1e71695f/concepts/a62153eb-458b-4c68-96fc-eeaa3b4aeaa6
 const double mph2mps = 0.44704;
 const double map_bounds = 1e5;
-const double velocity_upper_bound = 150/mph2mps; // in mph
+const double velocity_upper_bound = 150.00/mph2mps; // in mph
 const double velocity_lower_bound = -20/mph2mps; // in mph
-const double t_v = velocity_upper_bound * 0.7;
+const double t_v = velocity_upper_bound * 0.6;
 const double steering_max = 25*M_PI/180;
 
 const size_t x_start = 0;
@@ -75,35 +75,41 @@ public:
         fg[1+psi_start] = psi0 - vars[psi_start];
         fg[1+v_start]   = v0 - vars[v_start];
         
-        for (int t=1; t<N-1; t++) {
+        for (int t=1; t<N; t++) {
             // Calculate x(t+1)
-            AD<double> x1       = x0 + CppAD::cos(psi0)*v0 * dt;
-            fg[1+x_start+t]     = x1 - vars[x_start+t];
+            AD<double> x1       = x0 + CppAD::cos(psi0)*(v0 * dt);
+            fg[x_start+t]       = x1 - vars[x_start+t];
             // Calculate y(t+1)
-            AD<double> y1       = y0 + CppAD::sin(psi0)*v0 * dt;
-            fg[1+y_start+t]     = y1 - vars[y_start+t];
+            AD<double> y1       = y0 + CppAD::sin(psi0)*(v0 * dt);
+            fg[y_start+t]       = y1 - vars[y_start+t];
             // Calculate trajectory f(coeff, x(t+1))
-            AD<double> f1       = coeffs[0] + coeffs[1]*x1 + coeffs[2]*CppAD::pow(x1, 2);
+            AD<double> f1       = 0;
+            for (size_t t_id = 0; t_id<coeffs.size(); t_id++) {
+                f1+=coeffs[t_id]*CppAD::pow(x1, t_id);
+            }
             // Calculate CTE
             AD<double> cte1     = f1 - y1;
             // Calculate psi(t+1)
-            AD<double> psi1     = psi0 + v0/Lf * d1;
-            fg[1+psi_start+t]   = psi1 - vars[psi_start+t];
+            AD<double> psi1     = psi0 + v0/Lf * d1 * dt;
+            fg[psi_start+t]     = psi1 - vars[psi_start+t];
             // Calculate velocity(t+1)
             AD<double> v1       = v0 + a1 * dt;
-            fg[1+v_start+t]     = v1 - vars[v_start+t];
+            fg[v_start+t]       = v1 - vars[v_start+t];
             // Calculate trajectory psi based on atan(coeff[1]):
             // ** Udacity SDCND, Class 19.9: AD<double> psides0 = CppAD::atan(coeffs[1]);
-            AD<double> f_psi1   = CppAD::atan(coeffs[1]);
+            AD<double> f_psi1   = 0; // the rotation of the car defined as a sloap of tangent line at x. The sloap of tangent line defined as a derivative of the floap.
+            for (size_t t_id = 1; t_id<coeffs.size(); t_id++) {
+                f_psi1 += double(t_id)*coeffs[t_id]*CppAD::pow(x1, t_id-1);
+            }
+            f_psi1   = CppAD::atan(f_psi1);
             // Calculate epsi(t+1)
             AD<double> epsi1    = f_psi1 - psi1;
             // Calculate total cost function
-            fg[0] += w_cte  * CppAD::pow(cte1,       2); // Enforce proximity to the trajectory
-            fg[0] += w_epsi * CppAD::pow(epsi1,      2); // Enforce proximity of the car rotation to the rotation implied by the trajectory
-            fg[0] += w_d    * CppAD::pow(d1-d0,      2); // Enforce smooth steering
-            fg[0] += w_v    * CppAD::pow(v1-v0,      2); // Enforce speed changes
-            fg[0] += w_a    * CppAD::pow(a1-a0,      2); // Enforce smooth acceleration changes
-            fg[0] += w_tv   * CppAD::pow(t_v-v1,     2); // Encourage speed
+            fg[0] += w_cte  * CppAD::pow(cte1,      2); // Enforce proximity to the trajectory
+            fg[0] += w_epsi * CppAD::pow(epsi1,     2) * v0/Lf; // Enforce proximity of the car rotation to the rotation implied by the trajectory
+            fg[0] += w_psi  * CppAD::pow(psi1-psi0, 2) * v0/Lf;
+            fg[0] += w_d    * CppAD::pow(d1,        2) * v0/Lf; // Enforce smooth steering
+            fg[0] += w_tv   * CppAD::pow(t_v-v1,    2); // Encourage speed
             // Finish motion model cycle by setting d(t) and a(t)
             x0      = x1;
             y0      = y1;
@@ -120,7 +126,10 @@ public:
 //
 // MPC class definition implementation.
 //
-MPC::MPC() {}
+MPC::MPC() {
+    beginning_time = clock();
+    step = 0;
+}
 MPC::~MPC() {}
 
 MPC::solution MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
@@ -136,7 +145,7 @@ MPC::solution MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     // Note: states starting at t+1 are not independent variables. Therefore,
     // they should not be included, and rather should be calculated by a motion model.
     // Therefore the number of independent variables is state_dim + control_dim * (N-1)
-    size_t n_vars = 4*N + (N-1)*2;
+    size_t n_vars = 6*N;
     // Set the number of constraints
     size_t n_constraints = 4*N;
     
@@ -213,9 +222,10 @@ MPC::solution MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     CppAD::ipopt::solve_result<Dvector> solution;
     
     // solve the problem
-    CppAD::ipopt::solve<Dvector, FG_eval>(
-                                          options, vars, vars_lowerbound, vars_upperbound, constraints_lowerbound,
-                                          constraints_upperbound, fg_eval, solution);
+    CppAD::ipopt::solve<Dvector, FG_eval>(options, vars,
+                                          vars_lowerbound, vars_upperbound,
+                                          constraints_lowerbound, constraints_upperbound,
+                                          fg_eval, solution);
     
     // Check some of the solution values
     ok &= solution.status == CppAD::ipopt::solve_result<Dvector>::success;
@@ -232,5 +242,9 @@ MPC::solution MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
         s.x.push_back(solution.x[x_start+t]);
         s.y.push_back(solution.x[y_start+t]);
     }
+    // measure execution time
+    step += 1;
+    time_t end_time = clock();
+    cout << "execution time (in miliseconds): " << (end_time - beginning_time)/step << endl;
     return s;
 }

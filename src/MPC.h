@@ -16,6 +16,9 @@ public:
         vector<double> y;
     };
     
+    time_t beginning_time;
+    double step;
+    
     MPC();
     
     virtual ~MPC();
