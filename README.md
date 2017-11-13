@@ -3,9 +3,10 @@ Self-Driving Car Engineer Nanodegree Program
 
 ---
 The project illustrates the implementation of Model Predictive Control (MPC) controller that enables a car to follow a trajectory provided by path planning module.
+
 [![IMAGE ALT TEXT HERE](Demo.gif)](https://youtu.be/F_VOoaFvCP4)
 
-This MPC was tunned to achieve a more aggressive driving style. The car in this demo reaches speeds of 90mph and slows down quickly to as low as 30mph. All of the decision regarding steering angle and the optimal speed are made by MPC based on a simple kinematic model of a car. The model can be further improved by incorporating more data related to proximity to sounding obstacles as well as by extending the model to incorporate a dynamic model of the vehicle.
+This MPC was tunned to achieve a more aggressive driving style. The car in this demo reaches speeds of 90mph and slows down quickly to as low as 30mph. The performance of MPC is comparable to a competitve human driver. All of the decision regarding steering angle and the optimal speed are made by MPC based on a simple kinematic model of a car. The model can be further improved by incorporating more data related to proximity to sounding obstacles as well as by extending the model to incorporate a dynamic model of the vehicle.
 
 ---
 
@@ -29,6 +30,20 @@ cte - defined as a cross track error of position y(t+1) and trajectory value f(x
 epsi - defined as orientation error and being calculated as: epsi = atan( f'(x(t+1)) ) - psi(t+1). Where f'( x(t+1) ) is a derivative of trajectory curve
 
 The corresponding code can be found in **MPC.cpp - lines 78 to 113**.
+
+### Timestep Length and Elapsed Duration (N & dt)
+
+MPC is highly sensitive to the settings of various components of cost function as well as dt and N.
+**dt** - was set based on the observed average duration of the algorithm update. The duration of algorithm update varies significantly. At the number of steps (N) equal to 10, the duration of an update took between 20 to 30 milliseconds, averaging at 25 milliseconds.
+N - the number of steps is the main driver of the computational cost associated with the algorithm. Therefore, the N was set based on the length of projected trajectory. The best behavior was achieved using 10 steps.
+
+### Data preprocessing steps
+
+x,y, and psi observations were preprocessed with the inverse of homogenious transform to convert observations from a map coordinate system into a car coordinate system. Velocity value was converted from mph to meters per second.
+The overall trajectory was calculated by fitting 3rd-degree polynomial function onto waypoints (transformed into car coordinate system) provided by a simulator/path planning block.
+
+
+The corresponding code can be found in main.cpp, lines 92-102.
 
 ---
 ## Dependencies
