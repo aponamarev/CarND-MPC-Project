@@ -18,16 +18,25 @@ The model used in the project is a global kinematic model of a vehicle.
 **States** - The model assumes that a vehicle state represented by 4 coordinates [x,y, rotation(psi). velocity(v)]
 **Actuators** - The state of a vehicle depends only on control inputs of actuators [steering(d), acceleration(a)]
 **Update equations** - The control inputs change the state of the car as follows:
+
 x(t+1) = x(t) + cos(psi)*dt
+
 y(t+1) = y(t) + sin(psi)*dt
+
 psi(t+1) = psi(t) + v(t)/Lf * d * dt
+
 v(t+1) = v(t) + a(t)*dt
 
 To find appropriate controller (actuator) values, MPC minimizes a cost function wrt constraints. The const function defined as:
+
 ∑G(d,a,x) = w_cte * cte(t+1) + w_epsi * epsi(t+1) + w_psi * (psi(t+1)-psi(t)) + w_d * d(t) + w_tv * (100mph - v(t+1))
+
 Where:
+
 cte - defined as a cross track error of position y(t+1) and trajectory value f(x(t+1))
+
 epsi - defined as orientation error and being calculated as: epsi = atan( f'(x(t+1)) ) - psi(t+1). Where f'( x(t+1) ) is a derivative of trajectory curve
+
 
 The corresponding code can be found in **MPC.cpp - lines 78 to 113**.
 
