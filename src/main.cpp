@@ -21,6 +21,9 @@ double rad2deg(double x) { return x * 180 / pi(); }
 
 const double mph2mps = 0.44704;
 const double steering_limit = deg2rad(25);
+const long latency = 100;
+const double latency_in_sec = latency / 1000;
+const double Lf = 2.67;
 
 // **************************************************
 // **** Forward dedclaration of helper functions ****
@@ -81,15 +84,27 @@ int main() {
                     // j[1] is the data JSON object
                     vector<double> ptsx = j[1]["ptsx"];
                     vector<double> ptsy = j[1]["ptsy"];
-                    double px = j[1]["x"];
-                    double py = j[1]["y"];
-                    double psi = j[1]["psi"];
-                    double v = j[1]["speed"];
+                    const double px = j[1]["x"];
+                    const double py = j[1]["y"];
+                    const double psi = j[1]["psi"];
+                    const double v = double(j[1]["speed"]) * mph2mps; // Convert to meters per second
+                    const double d = j[1]["steering_angle"];
+                    const double a = j[1]["throttle"];
+                    
+                    // Account for latency by predicting the location of X(t+1)
+                    // at a time of actuators engagement
+                    
+                    // negative sign acounts for the reverse direction of rotation
+                    const double px1 = px - cos(psi) * v * latency_in_sec;
+                    const double py1 = py - sin(psi) * v * latency_in_sec;
+                    const double psi1 = psi - v/Lf * d * latency_in_sec;
+                    const double v1 = v + a * latency_in_sec;
+                    
                     
                     /*
                      * Calculate steering angle and throttle using MPC.
                      */
-                    inv_homog_transform(ptsx, ptsy, px, py, psi);
+                    inv_homog_transform(ptsx, ptsy, px1, py1, psi1);
                     
                     Eigen::VectorXd w_points_x(ptsx.size()), w_points_y(ptsx.size());
                     
@@ -98,7 +113,7 @@ int main() {
                         w_points_y[t] = ptsy[t];
                     }
                     Eigen::VectorXd state(4);
-                    state << 0.0, 0.0, 0.0, v/mph2mps;
+                    state << 0, 0, 0, v1;
                     Eigen::VectorXd coeff = polyfit(w_points_x, w_points_y, 3);
                     MPC::solution solution = mpc.Solve(state, coeff);
                     vector<double> solution_x = solution.x;
@@ -144,7 +159,7 @@ int main() {
                     //
                     // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
                     // SUBMITTING.
-                    this_thread::sleep_for(chrono::milliseconds(0));
+                    this_thread::sleep_for(chrono::milliseconds(latency));
                     ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
                 }
             } else {

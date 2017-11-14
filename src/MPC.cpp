@@ -8,14 +8,12 @@ using CppAD::AD;
 
 // Set the timestep length and duration to 1 second
 size_t N = 10;
-double dt = 0.03;
-double delay_t = 0.100;
+double dt = 0.1;
 
-const double w_cte  = 50; // Enforce proximity to the trajectory
-const double w_epsi = 5000; // Enforce proximity of the car rotation to the rotation implied by the trajectory
-const double w_psi  = 1000;
-const double w_d    = 5000; // Enforce smooth steering
-const double w_tv   = 0.1; // Encourage speed
+const double w_cte  = 2.5; // Enforce proximity to the trajectory
+const double w_epsi = 100; // Enforce proximity of the car rotation to the rotation implied by the trajectory
+const double w_psi  = 5000;
+const double w_tv   = 0.25; // Encourage speed
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -30,9 +28,9 @@ const double w_tv   = 0.1; // Encourage speed
 const double Lf = 2.67; // Udacity SDCND Lesson 18.3 Link - https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/af4fcd4f-eb1f-43d8-82b3-17bb1e71695f/concepts/a62153eb-458b-4c68-96fc-eeaa3b4aeaa6
 const double mph2mps = 0.44704;
 const double map_bounds = 1e5;
-const double velocity_upper_bound = 150.00/mph2mps; // in mph
-const double velocity_lower_bound = -20/mph2mps; // in mph
-const double t_v = velocity_upper_bound * 0.6;
+const double velocity_upper_bound = 150.00 * mph2mps; // in mph
+const double velocity_lower_bound = -20 * mph2mps; // in mph
+const double t_v = velocity_upper_bound * 0.8;
 const double steering_max = 25*M_PI/180;
 
 const size_t x_start = 0;
@@ -108,7 +106,6 @@ public:
             fg[0] += w_cte  * CppAD::pow(cte1,      2); // Enforce proximity to the trajectory
             fg[0] += w_epsi * CppAD::pow(epsi1,     2) * v0/Lf; // Enforce proximity of the car rotation to the rotation implied by the trajectory
             fg[0] += w_psi  * CppAD::pow(psi1-psi0, 2) * v0/Lf;
-            fg[0] += w_d    * CppAD::pow(d1,        2) * v0/Lf; // Enforce smooth steering
             fg[0] += w_tv   * CppAD::pow(t_v-v1,    2); // Encourage speed
             // Finish motion model cycle by setting d(t) and a(t)
             x0      = x1;
@@ -243,8 +240,5 @@ MPC::solution MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
         s.y.push_back(solution.x[y_start+t]);
     }
     // measure execution time
-    step += 1;
-    time_t end_time = clock();
-    cout << "execution time (in miliseconds): " << (end_time - beginning_time)/step << endl;
     return s;
 }

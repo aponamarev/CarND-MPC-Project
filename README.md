@@ -43,7 +43,7 @@ The corresponding code can be found in **MPC.cpp - lines 78 to 113**.
 ### Timestep Length and Elapsed Duration (N & dt)
 
 MPC is highly sensitive to the settings of various components of cost function as well as dt and N.
-**dt** - was set based on the observed average duration of the algorithm update. The duration of algorithm update varies significantly. At the number of steps (N) equal to 10, the duration of an update took between 20 to 30 milliseconds, averaging at 25 milliseconds.
+**dt** - the duration of the time stamp was set at 0.1 seconds to run efficiently with the goal to cover a trajectory of roughly 1 second.
 N - the number of steps is the main driver of the computational cost associated with the algorithm. Therefore, the N was set based on the length of projected trajectory. The best behavior was achieved using 10 steps.
 
 ### Data preprocessing steps
@@ -52,7 +52,15 @@ x,y, and psi observations were preprocessed with the inverse of homogenious tran
 The overall trajectory was calculated by fitting 3rd-degree polynomial function onto waypoints (transformed into car coordinate system) provided by a simulator/path planning block.
 
 
-The corresponding code can be found in main.cpp, lines 92-102.
+The corresponding code can be found in main.cpp, lines 107-117.
+
+
+### Model Predictive Control that handles a 100-millisecond latency
+
+In order to adjust for latency in engaging the actuators, the model calculates the new state at the time t+100 milliseconds. The values of the new state are used subsequently to transform coordinates of waypoints. This setup allows controlling the car successfully at various latencies in a range between 0 and 100 milliseconds.
+
+
+The corresponding code can be found in main.cpp, lines 98-107.
 
 ---
 ## Dependencies
