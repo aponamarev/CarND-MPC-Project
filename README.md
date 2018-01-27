@@ -6,7 +6,7 @@ The project illustrates the implementation of Model Predictive Control (MPC) con
 
 [![IMAGE ALT TEXT HERE](Demo.gif)](https://youtu.be/F_VOoaFvCP4)
 
-This MPC was tunned to achieve a more aggressive driving style. The car in this demo reaches speeds of 90mph and slows down quickly to as low as 30mph. The performance of MPC is comparable to a competitve human driver. All of the decision regarding steering angle and the optimal speed are made by MPC based on a simple kinematic model of a car. The model can be further improved by incorporating more data related to proximity to sounding obstacles as well as by extending the model to incorporate a dynamic model of the vehicle.
+Model Predictive Control algorithm was designed to achieve an aggressive driving style similar to the behaviour of a racing driver. The project incorporates a demo in a virtual environment. The car in the demo reaches top speeds of 90mph and slows down quickly to as low as 30mph. The performance of MPC is comparable to a competitive human driver. All of the decision regarding steering angle and the optimal speed are made by MPC based on a simple kinematic model of a car. The model can be further improved by incorporating more data related to proximity to sounding obstacles as well as by extending the model to incorporate a dynamic model of the vehicle.
 
 ---
 
